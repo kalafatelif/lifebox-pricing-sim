@@ -23,7 +23,7 @@ with st.sidebar:
     st.divider()
     st.header("🎯 Stratejik Konumlandırma")
     strategy_mode = st.radio(
-        "Pazar Hedefi Belirleyin:",
+        "Pazar Hedefi:",
         ["Agresif Büyüme", "Dengeli", "Yüksek Karlılık", "Özel (Manuel)"],
         index=1
     )
@@ -40,9 +40,16 @@ with st.sidebar:
 
 # --- HESAPLAMALAR ---
 suggested_p1 = apple * (1 - gap_p1)
-suggested_p2 = (dropbox / 4) * (1 - gap_p2) # 2.5TB vs Dropbox 2TB normalizasyonu
+suggested_p2 = (dropbox / 4) * (1 - gap_p2) # 2.5TB'ı 2TB'lık Dropbox'a göre oranlıyoruz
 
-# --- ANA EKRAN: FİYAT ÖNERİLERİ ---
+# Birim Fiyatlar (TL/GB)
+lb_unit_p1 = suggested_p1 / 250
+lb_unit_p2 = suggested_p2 / 2500
+google_unit = google / 100
+apple_unit = apple / 50
+dropbox_unit = dropbox / 2000
+
+# --- ANA EKRAN: ÖNERİLER ---
 st.header("🎯 Paket Fiyat Önerileri")
 col1, col2 = st.columns(2)
 with col1:
@@ -50,27 +57,33 @@ with col1:
 with col2:
     st.metric(label="🚀 2.5 TB Paketi", value=f"{suggested_p2:.2f} TL")
 
-# --- KARŞILAŞTIRMALI TABLO ---
+# --- TABLO 1: TOPLAM FİYAT KIYASI ---
 st.divider()
-st.header("📋 Karşılaştırmalı Pazar Analizi")
-comparison_data = {
-    "Paket Segmenti": ["250 GB (Giriş)", "2.5 TB (Yüksek Kapasite)"],
-    "Önerilen Fiyat": [f"{suggested_p1:.2f} TL", f"{suggested_p2:.2f} TL"],
-    "Google (100GB) Kıyas": [f"%{((suggested_p1/google)-1)*100:.1f}", f"%{((suggested_p2/google)-1)*100:.1f}"],
-    "Apple (50GB) Kıyas": [f"%{((suggested_p1/apple)-1)*100:.1f}", f"%{((suggested_p2/apple)-1)*100:.1f}"],
-    "Dropbox (Birim) Kıyas": [f"%{((suggested_p1/(dropbox/20))-1)*100:.1f}", f"%{((suggested_p2/(dropbox/0.8))-1)*100:.1f}"]
-}
-st.table(pd.DataFrame(comparison_data))
+st.header("📋 Tablo 1: Toplam Fiyat Kıyası (Cüzdan Payı)")
+st.write("Müşterinin cebinden çıkacak toplam TL tutarının rakiplerle kıyaslanması.")
 
-# --- ÖNEMLİ NOT: BİRİM FİYAT AÇIKLAMASI ---
-with st.expander("ℹ️ Birim Fiyat (Unit Price) Analizi Hakkında Not"):
-    st.write("""
-    **Birim Fiyat Nedir?** Rakiplerin (özellikle Dropbox) sunduğu saklama kapasiteleri bizim paketlerimizden çok daha büyük veya küçük olabilir. Bu durumda sadece 'toplam fiyatı' kıyaslamak yanıltıcıdır.
-    
-    * **Normalizasyon:** Tabloda Dropbox için yapılan 'Birim' kıyası, **1 GB başına düşen maliyeti** temsil eder. 
-    * **Örnek:** Dropbox 2000 GB'ı 350 TL'ye satıyorsa, 1 GB fiyatı 0.17 TL'dir. Bizim 2.5 TB (2500 GB) paketimiz 56 TL ise 1 GB fiyatımız 0.02 TL olur. 
-    * **Sonuç:** Toplamda Dropbox daha pahalı görünse de, birim bazda (GB başına) Lifebox'ın ne kadar daha 'verimli' bir teklif sunduğunu bu analizle kanıtlıyoruz.
-    """)
+df_total = pd.DataFrame({
+    "Paket": ["250 GB", "2.5 TB"],
+    "Lifebox Öneri": [f"{suggested_p1:.2f} TL", f"{suggested_p2:.2f} TL"],
+    "Google (100GB)": [f"{google:.2f} TL", f"{google:.2f} TL"],
+    "Apple (50GB)": [f"{apple:.2f} TL", f"{apple:.2f} TL"],
+    "Dropbox (2TB)": [f"{dropbox:.2f} TL", f"{dropbox:.2f} TL"]
+})
+st.table(df_total)
+
+# --- TABLO 2: BİRİM FİYAT KIYASI ---
+st.divider()
+st.header("⚖️ Tablo 2: Birim Fiyat Kıyası (1 GB Maliyeti)")
+st.write("Verimlilik odaklı kullanıcılar için 1 GB başına düşen TL maliyeti.")
+
+df_unit = pd.DataFrame({
+    "Paket": ["250 GB", "2.5 TB"],
+    "Lifebox (TL/GB)": [f"{lb_unit_p1:.3f}", f"{lb_unit_p2:.3f}"],
+    "Google (TL/GB)": [f"{google_unit:.3f}", f"{google_unit:.3f}"],
+    "Apple (TL/GB)": [f"{apple_unit:.3f}", f"{apple_unit:.3f}"],
+    "Dropbox (TL/GB)": [f"{dropbox_unit:.3f}", f"{dropbox_unit:.3f}"]
+})
+st.table(df_unit)
 
 # --- UNIT ECONOMICS ---
 st.divider()
@@ -80,12 +93,12 @@ ltv_calculated = manual_arpu * manual_tenure
 cac_estimated = 150 if strategy_mode == "Agresif Büyüme" else 100
 m1.metric("LTV (Lifetime Value)", f"{ltv_calculated:.0f} TL")
 m2.metric("Tahmini CAC", f"{cac_estimated} TL")
-m3.metric("LTV / CAC Verimliliği", f"{ltv_calculated/cac_estimated:.1f}x")
+m3.metric("LTV / CAC Oranı", f"{ltv_calculated/cac_estimated:.1f}x")
 
 # --- GRAFİK ---
 st.divider()
 st.header("📊 Kümülatif Gelir Projeksiyonu")
 months = np.arange(1, manual_tenure + 1)
 cumulative_rev = months * (total_users * manual_arpu)
-df_proj = pd.DataFrame({'Ay': months, 'Kümülatif Gelir (Milyon TL)': cumulative_rev / 1_000_000})
+df_proj = pd.DataFrame({'Ay': months, 'Milyon TL': cumulative_rev / 1_000_000})
 st.line_chart(df_proj.set_index('Ay'))
