@@ -2,84 +2,105 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# Tasarımı Güzelleştirelim
-st.set_page_config(page_title="Lifebox Pricing Strategy", layout="wide")
+# Sayfa Ayarları
+st.set_page_config(page_title="Lifebox Strategic Pricing", layout="wide")
 
-# Kurumsal Tema Uygulaması
+# Tasarım ve Okunabilirlik Ayarları (Dark Mode uyumlu, net metinler)
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; }
-    .stMetric { background-color: #1e2129; padding: 20px; border-radius: 10px; border: 1px solid #3e4451; }
-    div[data-testid="stMetricValue"] { font-size: 40px; color: #007bff; }
+    .main { background-color: #0e1117; color: white; }
+    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #e0e0e0; }
+    [data-testid="stMetricValue"] { color: #1a73e8 !important; font-size: 35px; font-weight: bold; }
+    [data-testid="stMetricLabel"] { color: #3c4043 !important; font-size: 18px; font-weight: 600; }
+    .stSlider label, .stNumberInput label { color: white !important; font-weight: 500; }
+    .price-box { text-align: center; background-color: #1e2129; padding: 30px; border-radius: 15px; border: 2px solid #00ffcc; margin: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ Lifebox Pricing War Room")
-st.caption("Rakiplere ve Pazar Koşullarına Duyarlı Karar Destek Mekanizması")
+st.title("🛡️ Lifebox Strategic Pricing Cockpit")
+st.caption("Pazar Benchmarking ve Karar Destek Sistemi")
 
 # --- SOL PANEL: STRATEJİK GİRDİLER ---
 with st.sidebar:
-    st.header("📊 Market Verileri")
-    lb_current = st.number_input("Lifebox Mevcut Fiyat (TL)", value=49.90)
-    st.divider()
-    google = st.number_input("Google One (100GB) TL", value=59.90)
-    apple = st.number_input("iCloud+ (50GB) TL", value=39.90)
+    st.header("📊 Global Rakip Benchmarks")
+    google = st.number_input("Google One (100GB)", value=59.99)
+    apple = st.number_input("iCloud+ (50GB)", value=39.99)
+    dropbox = st.number_input("Dropbox (2TB)", value=350.00)
     
     st.divider()
-    st.header("🎯 Strateji Ayarı")
-    target_discount = st.slider("Piyasa Liderinden % İndirim Hedefi", 5, 50, 20)
-    st.info("Bu slider, global rakiplerin en ucuzuna göre ne kadar agresif olacağımızı belirler.")
+    st.header("🎯 Stratejik Odak")
+    strategy_mode = st.select_slider(
+        "Pazar Hedefi",
+        options=["Agresif Büyüme", "Dengeli", "Yüksek Karlılık"],
+        value="Dengeli"
+    )
+    st.caption("Not: Seçilen mod, rakiplere göre uygulanacak 'Price Gap' oranını belirler.")
 
 # --- MEKANİK: HESAPLAMA MOTORU ---
-market_min = min(google, apple)
-suggested_price = market_min * (1 - (target_discount / 100))
+# Stratejiye göre indirim (Price Gap) oranları
+if strategy_mode == "Agresif Büyüme":
+    gap_p1, gap_p2 = 0.45, 0.55
+elif strategy_mode == "Dengeli":
+    gap_p1, gap_p2 = 0.25, 0.35
+else: # Yüksek Karlılık
+    gap_p1, gap_p2 = 0.10, 0.15
 
-# --- TEPE NOKTASI: BÜYÜK ÖNERİ FİYATI ---
+# Lifebox Paket Önerileri (GB bazlı akıllı konumlandırma)
+suggested_p1 = apple * (1 - gap_p1) # 250GB Paketi Apple 50GB'dan ucuz olmalı
+suggested_p2 = (dropbox / 4) * (1 - gap_p2) # 2.5TB Paketi Dropbox'ın hacim avantajını kırmalı
+
+# --- TEPE NOKTASI: BÜYÜK ÖNERİ FİYATLARI ---
 st.divider()
-col_main = st.columns([1, 2, 1])
-with col_main[1]:
-    st.markdown(f"<h2 style='text-align: center;'>🎯 Önerilen Yeni Fiyat</h2>", unsafe_allow_html=True)
-    st.markdown(f"<h1 style='text-align: center; font-size: 80px; color: #00ffcc;'>{suggested_price:.2f} TL</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center;'>Mevcut Fiyata Göre Değişim: %{((suggested_price/lb_current)-1)*100:.1f}</p>", unsafe_allow_html=True)
+st.markdown(f"<h3 style='text-align: center;'>🎯 '{strategy_mode}' Modu İçin Önerilen Fiyatlandırma</h3>", unsafe_allow_html=True)
+c_p1, c_p2 = st.columns(2)
+
+with c_p1:
+    st.markdown(f"""<div class='price-box'>
+    <h3>📦 250 GB Paketi</h3>
+    <p style='color: #888;'>Saklama Alanı + Premium</p>
+    <h1 style='color: #00ffcc;'>{suggested_p1:.2f} TL</h1>
+    <p>Hedef: Apple 50GB'ın %{gap_p1*100:.0f} Altı</p>
+    </div>""", unsafe_allow_html=True)
+
+with c_p2:
+    st.markdown(f"""<div class='price-box'>
+    <h3>🚀 2.5 TB Paketi</h3>
+    <p style='color: #888;'>Saklama Alanı + Premium</p>
+    <h1 style='color: #00ffcc;'>{suggested_p2:.2f} TL</h1>
+    <p>Hedef: Dropbox 2TB Birim Fiyatının %{gap_p2*100:.0f} Altı</p>
+    </div>""", unsafe_allow_html=True)
+
+# --- STRATEJİK METRİKLER (GÜNCELLENMİŞ VE OKUNABİLİR) ---
 st.divider()
-
-# --- SENARYOLAR ---
-st.subheader("🚨 Senaryo Simülasyonu")
-c1, c2, c3 = st.columns(3)
-if 'scenario' not in st.session_state: st.session_state.scenario = "Normal"
-
-if c1.button("📉 Devalüasyon (+%25 Maliyet)"): st.session_state.scenario = "Crash"
-if c2.button("⚔️ Fiyat Savaşı (Rakip -%40)"): st.session_state.scenario = "War"
-if c3.button("🔄 Normal Durum"): st.session_state.scenario = "Normal"
-
-# Senaryo Etkileri
-impact_msg = "Pazar stabil."
-if st.session_state.scenario == "Crash":
-    suggested_price *= 1.25
-    impact_msg = "Döviz artışı maliyetleri vurdu, fiyat yukarı revize edildi."
-elif st.session_state.scenario == "War":
-    suggested_price *= 0.6
-    impact_msg = "Rakip agresifleşti, pazar payı koruma moduna geçildi."
-
-# --- SAĞ TARAF: FORMÜLLER VE METRİKLER ---
-st.subheader("📈 Stratejik Metrikler ve Formüller")
+st.subheader("📈 Birim Ekonomi Analizi")
 m1, m2, m3 = st.columns(3)
 
+# LTV/CAC Formülleri (Gerçekçi Cloud Metrikleri)
+# Ortalama churn %3, müşteri ömrü 33 ay varsayımıyla
+avg_arpu = (suggested_p1 + suggested_p2) / 2
+ltv_val = avg_arpu * 33 
+cac_val = 150 if strategy_mode == "Agresif Büyüme" else 100
+
 with m1:
-    st.metric("LTV (Lifetime Value)", "1.240 TL", help="Formül: ARPU x Müşteri Ömrü (Ay). Bir müşteriden toplamda kazanılan para.")
+    st.metric("Tahmini LTV (Lifetime Value)", f"{ltv_val:.0f} TL", 
+              help="ARPU x Müşteri Ömrü. Bir kullanıcının Lifebox'ta kaldığı sürece bıraktığı toplam ciro.")
 with m2:
-    st.metric("CAC (Acquisition Cost)", "210 TL", help="Formül: Toplam Pazarlama Gideri / Yeni Müşteri Sayısı. Bir müşteriyi kazanma maliyeti.")
+    st.metric("Tahmini CAC", f"{cac_val} TL", 
+              help="Bir yeni aboneyi kazanmak için yapılan reklam ve operasyon maliyeti.")
 with m3:
-    st.metric("LTV / CAC Oranı", f"{(suggested_price*12)/210:.1f}x", help="Formül: LTV / CAC. 3x üzeri sağlıklı kabul edilir.")
+    st.metric("LTV / CAC Verimliliği", f"{ltv_val/cac_val:.1f}x", 
+              help="3.0x üzeri 'Sağlıklı', 5.0x üzeri 'Çok Karlı' kabul edilir.")
 
-# --- GRAFİK: GELİR OPTİMİZASYONU ---
-st.subheader("📊 Fiyat-Gelir Optimizasyonu (Hangi Fiyat Daha Çok Kazandırır?)")
-price_points = np.linspace(10, 150, 30)
-# Fiyat arttıkça kullanıcı azalır ama bir noktada gelir maksimum olur
-revenue_curve = (price_points * (2000 / (price_points + 5))) 
-df_chart = pd.DataFrame({'Fiyat (TL)': price_points, 'Tahmini Toplam Gelir (K)': revenue_curve})
+# --- GRAFİK: OPTİMİZASYON ---
+st.divider()
+st.subheader("📊 Fiyat-Gelir Dengesi (Revenue Maximization)")
+p_points = np.linspace(10, 250, 50)
+# Fiyat arttıkça talep düşer (Elasticity)
+demand = (10000 / (p_points + 20)) * (1.3 if strategy_mode == "Agresif Büyüme" else 1.0)
+revenue = p_points * demand
 
+df_chart = pd.DataFrame({'Fiyat (TL)': p_points, 'Tahmini Toplam Ciro (K)': revenue})
 st.area_chart(df_chart.set_index('Fiyat (TL)'))
-st.caption("Grafik Açıklaması: Bu eğri, fiyatı çok düşük tutarsak sürümden kazandığımızı, çok yüksek tutarsak müşteri kaybettiğimizi gösterir. En tepe nokta 'Optimal Gelir' noktasıdır.")
+st.caption("Grafik: Bu eğrinin en tepe noktası, hacim ve fiyatın çarpımıyla elde edilen maksimum ciro noktasını gösterir.")
 
-st.info(f"💡 **Strateji Özeti:** {impact_msg}")
+st.info(f"💡 **Stratejik Not:** Mevcut '{strategy_mode}' ayarı ile pazar payı ve karlılık dengesi optimize edilmiştir. Önerilen fiyatlar global rakiplerin yerel (TL) fiyat değişimlerine anlık duyarlıdır.")
