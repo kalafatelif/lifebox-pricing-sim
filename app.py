@@ -5,7 +5,39 @@ import numpy as np
 # Sayfa Ayarları
 st.set_page_config(page_title="Lifebox Pricing Öneri Modeli", layout="wide")
 
+# --- GÜVENLİK PROTOKOLÜ (ŞİFRE KORUMASI) ---
+def check_password():
+    """Kullanıcı doğru şifreyi girene kadar dashboard'u gizler."""
+    def password_entered():
+        """Şifre kontrol fonksiyonu"""
+        if st.session_state["password"] == "Lifebox2026":  # ŞİFREN BURASI! İstediğinle değiştirebilirsin.
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Şifreyi session'dan temizle
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # Şifre henüz girilmediyse giriş ekranını göster
+        st.markdown("<h2 style='text-align: center;'>🔐 Stratejik Karar Destek Sistemi</h2>", unsafe_allow_html=True)
+        st.text_input("Lütfen Giriş Şifresini Yazın", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        # Şifre yanlış girildiyse hata göster ve tekrar sor
+        st.markdown("<h2 style='text-align: center;'>🔐 Stratejik Karar Destek Sistemi</h2>", unsafe_allow_html=True)
+        st.text_input("Lütfen Giriş Şifresini Yazın", type="password", on_change=password_entered, key="password")
+        st.error("❌ Hatalı Şifre. Lütfen tekrar deneyin.")
+        return False
+    else:
+        return True
+
+# Şifre kontrolü geçilemezse kodu durdur
+if not check_password():
+    st.stop()
+
+# --- ŞİFRE DOĞRUYSA AŞAĞIDAKİ DASHBOARD YÜKLENİR ---
+
 st.title("🛡️ Lifebox Pricing Öneri Modeli")
+st.write("Rakiplerle olan fiyat farkını anlık yönetin ve büyüme metrikleri üzerinden gelir projeksiyonu oluşturun.")
 
 # --- SOL PANEL: GİRDİLER ---
 with st.sidebar:
@@ -22,8 +54,6 @@ with st.sidebar:
 
     st.divider()
     st.header("🎯 Stratejik Konumlandırma")
-    
-    # Seçeneklerin içine açıklamaları parantez içinde ekledik
     strategy_mode = st.radio(
         "Pazar Hedefi Belirleyin:",
         [
@@ -35,7 +65,6 @@ with st.sidebar:
         index=1
     )
     
-    # Mantıksal kontrolleri yeni isimlere göre güncelliyoruz
     if "Özel" in strategy_mode:
         manual_gap = st.slider("Özel İndirim Oranı (%)", 0, 80, 20)
         gap_p1 = gap_p2 = manual_gap / 100
@@ -43,7 +72,7 @@ with st.sidebar:
         gap_p1, gap_p2 = 0.45, 0.55
     elif "Dengeli" in strategy_mode:
         gap_p1, gap_p2 = 0.25, 0.35
-    else: # Yüksek Karlılık
+    else:
         gap_p1, gap_p2 = 0.10, 0.15
 
 # --- HESAPLAMALAR ---
@@ -64,7 +93,7 @@ with col1:
 with col2:
     st.metric(label="🚀 2.5 TB Paketi", value=f"{suggested_p2:.2f} TL")
 
-# --- TABLO 1: TOPLAM FİYAT KIYASI ---
+# --- TABLOLAR ---
 st.divider()
 st.header("📋 Tablo 1: Toplam Fiyat Kıyası (Cüzdan Payı)")
 df_total = pd.DataFrame({
@@ -72,36 +101,4 @@ df_total = pd.DataFrame({
     "Lifebox Öneri": [f"{suggested_p1:.2f} TL", f"{suggested_p2:.2f} TL"],
     "Google (100GB)": [f"{google:.2f} TL", f"{google:.2f} TL"],
     "Apple (50GB)": [f"{apple:.2f} TL", f"{apple:.2f} TL"],
-    "Dropbox (2TB)": [f"{dropbox:.2f} TL", f"{dropbox:.2f} TL"]
-})
-st.table(df_total)
-
-# --- TABLO 2: BİRİM FİYAT KIYASI ---
-st.divider()
-st.header("⚖️ Tablo 2: Birim Fiyat Kıyası (1 GB Maliyeti)")
-df_unit = pd.DataFrame({
-    "Paket": ["250 GB", "2.5 TB"],
-    "Lifebox (TL/GB)": [f"{lb_unit_p1:.3f}", f"{lb_unit_p2:.3f}"],
-    "Google (TL/GB)": [f"{google_unit:.3f}", f"{google_unit:.3f}"],
-    "Apple (TL/GB)": [f"{apple_unit:.3f}", f"{apple_unit:.3f}"],
-    "Dropbox (TL/GB)": [f"{dropbox_unit:.3f}", f"{dropbox_unit:.3f}"]
-})
-st.table(df_unit)
-
-# --- UNIT ECONOMICS ---
-st.divider()
-st.header("📈 Birim Ekonomi ve LTV")
-m1, m2, m3 = st.columns(3)
-ltv_calculated = manual_arpu * manual_tenure
-cac_estimated = 150 if "Agresif" in strategy_mode else 100
-m1.metric("LTV (Lifetime Value)", f"{ltv_calculated:.0f} TL")
-m2.metric("Tahmini CAC", f"{cac_estimated} TL")
-m3.metric("LTV / CAC Oranı", f"{ltv_calculated/cac_estimated:.1f}x")
-
-# --- GRAFİK ---
-st.divider()
-st.header("📊 Kümülatif Gelir Projeksiyonu")
-months = np.arange(1, manual_tenure + 1)
-cumulative_rev = months * (total_users * manual_arpu)
-df_proj = pd.DataFrame({'Ay': months, 'Milyon TL': cumulative_rev / 1_000_000})
-st.line_chart(df_proj.set_index('Ay'))
+    "Dropbox (2TB)": [f"{dropbox:.2
