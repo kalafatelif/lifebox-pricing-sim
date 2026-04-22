@@ -22,27 +22,34 @@ with st.sidebar:
 
     st.divider()
     st.header("🎯 Stratejik Konumlandırma")
+    
+    # Seçeneklerin içine açıklamaları parantez içinde ekledik
     strategy_mode = st.radio(
-        "Pazar Hedefi:",
-        ["Agresif Büyüme", "Dengeli", "Yüksek Karlılık", "Özel (Manuel)"],
+        "Pazar Hedefi Belirleyin:",
+        [
+            "Agresif Büyüme (Rakipten %45-%55 ucuz / Pazar payı odaklı)", 
+            "Dengeli (Rakipten %25-%35 ucuz / Sürdürülebilir büyüme)", 
+            "Yüksek Karlılık (Rakipten %10-%15 ucuz / Marj odaklı)", 
+            "Özel (Manuel)"
+        ],
         index=1
     )
     
-    if strategy_mode == "Özel (Manuel)":
+    # Mantıksal kontrolleri yeni isimlere göre güncelliyoruz
+    if "Özel" in strategy_mode:
         manual_gap = st.slider("Özel İndirim Oranı (%)", 0, 80, 20)
         gap_p1 = gap_p2 = manual_gap / 100
-    elif strategy_mode == "Agresif Büyüme":
+    elif "Agresif" in strategy_mode:
         gap_p1, gap_p2 = 0.45, 0.55
-    elif strategy_mode == "Dengeli":
+    elif "Dengeli" in strategy_mode:
         gap_p1, gap_p2 = 0.25, 0.35
-    else:
+    else: # Yüksek Karlılık
         gap_p1, gap_p2 = 0.10, 0.15
 
 # --- HESAPLAMALAR ---
 suggested_p1 = apple * (1 - gap_p1)
-suggested_p2 = (dropbox / 4) * (1 - gap_p2) # 2.5TB'ı 2TB'lık Dropbox'a göre oranlıyoruz
+suggested_p2 = (dropbox / 4) * (1 - gap_p2) 
 
-# Birim Fiyatlar (TL/GB)
 lb_unit_p1 = suggested_p1 / 250
 lb_unit_p2 = suggested_p2 / 2500
 google_unit = google / 100
@@ -60,8 +67,6 @@ with col2:
 # --- TABLO 1: TOPLAM FİYAT KIYASI ---
 st.divider()
 st.header("📋 Tablo 1: Toplam Fiyat Kıyası (Cüzdan Payı)")
-st.write("Müşterinin cebinden çıkacak toplam TL tutarının rakiplerle kıyaslanması.")
-
 df_total = pd.DataFrame({
     "Paket": ["250 GB", "2.5 TB"],
     "Lifebox Öneri": [f"{suggested_p1:.2f} TL", f"{suggested_p2:.2f} TL"],
@@ -74,8 +79,6 @@ st.table(df_total)
 # --- TABLO 2: BİRİM FİYAT KIYASI ---
 st.divider()
 st.header("⚖️ Tablo 2: Birim Fiyat Kıyası (1 GB Maliyeti)")
-st.write("Verimlilik odaklı kullanıcılar için 1 GB başına düşen TL maliyeti.")
-
 df_unit = pd.DataFrame({
     "Paket": ["250 GB", "2.5 TB"],
     "Lifebox (TL/GB)": [f"{lb_unit_p1:.3f}", f"{lb_unit_p2:.3f}"],
@@ -90,7 +93,7 @@ st.divider()
 st.header("📈 Birim Ekonomi ve LTV")
 m1, m2, m3 = st.columns(3)
 ltv_calculated = manual_arpu * manual_tenure
-cac_estimated = 150 if strategy_mode == "Agresif Büyüme" else 100
+cac_estimated = 150 if "Agresif" in strategy_mode else 100
 m1.metric("LTV (Lifetime Value)", f"{ltv_calculated:.0f} TL")
 m2.metric("Tahmini CAC", f"{cac_estimated} TL")
 m3.metric("LTV / CAC Oranı", f"{ltv_calculated/cac_estimated:.1f}x")
